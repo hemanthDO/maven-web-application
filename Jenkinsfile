@@ -7,7 +7,7 @@ node
      ])
    ])
     def mvnHome=tool name: "maven3.6.3"
-    stage('CheckOutCode')
+    stage('CheckOutCodes')
     {
         git branch: 'development', credentialsId: 'cac2dcd1-0724-486b-9515-b77ce216b678', url: 'https://github.com/hemanthDO/maven-web-application.git'
     }
