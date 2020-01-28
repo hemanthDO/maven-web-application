@@ -1,51 +1,43 @@
-
-node('node1')
-
 node
-
 {
+    properties([
+     buildDiscarder(logRotator(numToKeepStr: '3')),
+     pipelineTriggers([
+         pollSCM('* * * * *')
+     ])
+   ])
+    def mvnHome=tool name: "maven3.6.3"
+    stage('CheckOutCode')
+    {
+        git branch: 'development', credentialsId: 'cac2dcd1-0724-486b-9515-b77ce216b678', url: 'https://github.com/hemanthDO/maven-web-application.git'
+    }
+    stage('Build')
+    {
+        sh "${mvnHome}/bin/mvn clean package"
+    }
+    stage('SonarQubeReport')
+    {
+         sh "${mvnHome}/bin/mvn sonar:sonar"
+    }
+	stage('UploadArtifactInTONexus')
+    {
+        sh "${mvnHome}/bin/mvn clean deploy"
+    }
+    stage('DeployeToTomcat')
+    {
+        sshagent(['1f4333ec-9246-47a5-bed9-e7abaca04403'])
+        {
+        sh  "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.235.95.141:/opt/apache-tomcat-9.0.30/webapps/" 
+        }
+        
+    }
+    stage('SendEmailNotification')
+    {
+        emailext body: '''$DEFAULT_CONTENT
 
-  def mavenHome=tool name: "maven3.6.3"
-  
- stage('Checkout')
- {
- 	git branch: 'development', credentialsId: 'bed5a851-d84d-412e-87e7-bf9ce23c0e0e', url: 'https://github.com/MithunTechnologiesDevOps/maven-web-application.git'
- 
- }
 
- 
-
-
- /*
- stage('Build')
- {
- sh  "${mavenHome}/bin/mvn clean package"
- }
- 
- stage('ExecuteSoanrQubeReport')
- {
- sh  "${mavenHome}/bin/mvn sonar:sonar"
- }
- 
- stage('UploadArtifactintoNexus')
- {
- sh  "${mavenHome}/bin/mvn deploy"
- }
- 
- stage('DeployAppintoTomcat')
- {
- sshagent(['cd93d61f-2d0f-4c60-8b33-34cf4fa888b0']) {
-  sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.235.132.183:/opt/apache-tomcat-9.0.29/webapps/"
- }
- }
-*/
- stage('SendEmailNotification')
- {
- emailext body: '''Build is over..
-
- Regards,
- Mithun Technologies,
- 9980923226.''', subject: 'Build is over', to: 'devopstrainingblr@gmail.com'
- }
-
+    thanks&regards,
+    Hemanth.M
+    8152064416''', subject: '$DEFAULT_SUBJECT-Amazon project pipeline', to: 'm.hemanth.redhat@gmail.com'
+    }
 }
